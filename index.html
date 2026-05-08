@@ -289,6 +289,15 @@ body::after{content:'';position:fixed;width:600px;height:600px;bottom:-120px;rig
   55%{transform:scale(1.18)}
   100%{transform:scale(1)}}
 }
+/* ── ESTRELA SEMANA ── */
+.rcar-star{position:absolute;bottom:calc(100% + 5px);left:50%;
+  transform:translate(-50%,0) scale(0);
+  background:linear-gradient(135deg,#f7cb35,#d48c00);color:#000;
+  font-size:.68rem;font-weight:900;border-radius:10px;padding:3px 8px;
+  white-space:nowrap;pointer-events:none;z-index:10;
+  transition:transform .45s cubic-bezier(.34,1.56,.64,1);
+  box-shadow:0 2px 10px rgba(0,0,0,.5),0 0 12px rgba(247,203,53,.45)}
+.rcar-star.show{transform:translate(-50%,0) scale(1)}
 /* ── FOGOS ── */
 #fw-canvas{position:fixed;inset:0;pointer-events:none;z-index:998;display:none}
 </style>
@@ -988,7 +997,7 @@ function renderBarSegs(score,max,color){
 }
 
 const _carPos=new Map();
-function renderCar(listId,score,max,color,name){
+function renderCar(listId,score,max,color,name,showStar){
   if(!score)return'';
   const N=Math.min(max,40);
   const filled=Math.round((score/max)*N);
@@ -1005,6 +1014,7 @@ function renderCar(listId,score,max,color,name){
       <img src="fotos/${slug}.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block" onerror="if(!this.dataset.t){this.dataset.t=1;this.src='fotos/${slug}.jpeg'}else{this.style.display='none'}">
       ${inits}
     </div>
+    ${showStar?`<div class="rcar-star">⭐ ${score}</div>`:''}
   </div>`;
 }
 
@@ -1053,12 +1063,19 @@ function renderList(id,rank,mode){
       <div class="rbar-wrap">
         <div class="rbar-segs">${renderBarSegs(r.score,dmax,bg)}</div>
         ${marks}
-        ${renderCar(id,r.score,dmax,bg,r.name)}
+        ${renderCar(id,r.score,dmax,bg,r.name,id==='list-semana')}
       </div>
       <span class="rscore">${r.score}</span>
       ${earnHtml}
     </div>`;
   }).join('');
+  // for semana, immediately hide bars so animateWeekBars() can reveal them
+  if(id==='list-semana'){
+    el.querySelectorAll('.rbar-segs').forEach(b=>{
+      b.style.clipPath='inset(0 100% 0 0)';
+      b.style.transition='none';
+    });
+  }
   // animate cars from old->new position and boost on sale
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     el.querySelectorAll('.rcar-marker').forEach(m=>{
@@ -1137,6 +1154,34 @@ function renderPodio(rank){
     <div class="pside-info">${rav(r.name,38)}<span class="pside-name">${r.name}</span></div>
     <span class="pside-score">${r.score}</span>
   </div>`).join('');
+}
+
+// ═══════════════════════════════════
+// ANIMAÇÃO — BARRAS SEMANA
+// ═══════════════════════════════════
+function animateWeekBars(){
+  const el=document.getElementById('list-semana');
+  if(!el)return;
+  // reset all bars and stars first
+  el.querySelectorAll('.rbar-segs').forEach(b=>{
+    b.style.transition='none';
+    b.style.clipPath='inset(0 100% 0 0)';
+  });
+  el.querySelectorAll('.rcar-star').forEach(s=>s.classList.remove('show'));
+  // rows from bottom to top
+  const rows=[...el.querySelectorAll('.rrow')].reverse();
+  rows.forEach((row,i)=>{
+    const bar=row.querySelector('.rbar-segs');
+    const star=row.querySelector('.rcar-star');
+    if(!bar)return;
+    const segs=bar.querySelectorAll('.bseg.on').length;
+    const dur=Math.max(500,Math.min(segs*18+300,900));
+    setTimeout(()=>{
+      bar.style.transition=`clip-path ${dur}ms cubic-bezier(.25,.46,.45,.94)`;
+      bar.style.clipPath='inset(0 0% 0 0)';
+      if(star) setTimeout(()=>star.classList.add('show'),dur-80);
+    },i*90);
+  });
 }
 
 // ═══════════════════════════════════
@@ -1394,6 +1439,7 @@ function showView(i){
   b.style.transition='none';b.style.width='0%';
   if(!paused) requestAnimationFrame(()=>{b.style.transition=`width ${VIEW_MS}ms linear`;b.style.width='100%';});
   slViewCount++;if(slViewCount>=SL_EVERY){slViewCount=0;setTimeout(showSpotlight,600);}
+  if(VIEWS[i]==='semana') setTimeout(animateWeekBars,200);
 }
 function startRot(){
   if(rotTmr) clearInterval(rotTmr);
