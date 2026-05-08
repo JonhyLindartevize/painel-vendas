@@ -1087,9 +1087,9 @@ function renderPodio(rank){
   const distinctScores=[...new Set(rank.map(r=>r.score))].sort((a,b)=>b-a);
   const scoreGroups=distinctScores.map(sc=>rank.filter(r=>r.score===sc));
 
-  // Assign standard competitive positions (1,1,3 if two tied for 1st)
+  // Assign dense positions (1,2,3,4 — each tied group occupies 1 position)
   let posCounter=1;
-  const groupPos=scoreGroups.map(g=>{const p=posCounter;posCounter+=g.length;return p;});
+  const groupPos=scoreGroups.map(g=>{const p=posCounter;posCounter+=1;return p;});
 
   // Stage = first 3 score groups; side = rest
   const stageGroups=scoreGroups.slice(0,3);
