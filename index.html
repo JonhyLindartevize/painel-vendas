@@ -279,7 +279,7 @@ body::after{content:'';position:fixed;width:600px;height:600px;bottom:-120px;rig
 #ctrl-sync{font-size:.6rem;font-weight:700;color:var(--muted);padding:0 6px;white-space:nowrap}
 
 /* ── INDICADOR DE POSIÇÃO ── */
-.rcar-marker{position:absolute;bottom:50%;transform:translate(-50%,50%);z-index:6;
+.rcar-marker{position:absolute;bottom:50%;transform:translate(-50%,-50%);z-index:6;
   pointer-events:none;transition:left .9s cubic-bezier(.2,.8,.2,1)}
 .rcar-inner{filter:drop-shadow(0 2px 8px rgba(0,0,0,.85)) drop-shadow(0 0 8px rgba(255,220,0,.45));transition:filter .3s}
 .rcar-marker.boost .rcar-inner{animation:carboost .75s ease-out forwards}
@@ -290,9 +290,9 @@ body::after{content:'';position:fixed;width:600px;height:600px;bottom:-120px;rig
   100%{transform:scale(1)}}
 }
 /* ── ESTRELA SEMANA ── */
-/* star-wrap is a SIBLING of rcar-marker inside rbar-wrap — same left% and same centering */
-.rcar-star-wrap{position:absolute;bottom:50%;
-  transform:translate(-50%,50%) scale(0); /* identical centering to rcar-marker */
+/* star-wrap is INSIDE rcar-marker, centered on the same point as the avatar circle */
+.rcar-star-wrap{position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%) scale(0); /* center-center of the parent marker */
   pointer-events:none;z-index:12}
 .rcar-star-wrap.wk-glow{animation:wkStarGlow 1.8s ease-in-out infinite}
 .rcar-star{position:relative;width:44px;height:42px;
@@ -1004,7 +1004,7 @@ function renderBarSegs(score,max,color){
 }
 
 const _carPos=new Map();
-function renderCar(listId,score,max,color,name){
+function renderCar(listId,score,max,color,name,showStar){
   if(!score)return'';
   const N=Math.min(max,40);
   const filled=Math.round((score/max)*N);
@@ -1016,11 +1016,13 @@ function renderCar(listId,score,max,color,name){
   const inits=initials(name);
   const bg=color.replace(/['"/]/g,'');
   const sz=36;
+  const innerOpa=showStar?'opacity:0;':'';
   return`<div class="rcar-marker" style="left:${oldPct}%" data-tgt="${newPct}" data-key="${key}">
-    <div class="rcar-inner" style="width:${sz}px;height:${sz}px;border-radius:50%;overflow:hidden;border:2.5px solid ${bg};box-sizing:border-box;position:relative;background:${bg};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;font-family:inherit;letter-spacing:.02em">
+    <div class="rcar-inner" style="width:${sz}px;height:${sz}px;border-radius:50%;overflow:hidden;border:2.5px solid ${bg};box-sizing:border-box;position:relative;background:${bg};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;font-family:inherit;letter-spacing:.02em;${innerOpa}">
       <img src="fotos/${slug}.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block" onerror="if(!this.dataset.t){this.dataset.t=1;this.src='fotos/${slug}.jpeg'}else{this.style.display='none'}">
       ${inits}
     </div>
+    ${showStar?`<div class="rcar-star-wrap"><div class="rcar-star"><span class="rcar-star-num">${score}</span></div></div>`:''}
   </div>`;
 }
 
@@ -1062,13 +1064,6 @@ function renderList(id,rank,mode){
       }
       earnHtml=`<div class="rearning"><span class="reval">${fmtBRL(earn)}</span>${plusHtml}<span class="rnext">${nextTxt}</span></div>`;
     }
-    // for semana: calculate bar-tip percentage to position the star-wrap at same X as car
-    const starHtml=(()=>{
-      if(id!=='list-semana'||!r.score)return'';
-      const N2=Math.min(dmax,40);
-      const pct=Math.round(Math.round((r.score/dmax)*N2)/N2*100);
-      return`<div class="rcar-star-wrap" style="left:${pct}%"><div class="rcar-star"><span class="rcar-star-num">${r.score}</span></div></div>`;
-    })();
     return `<div class="rrow ${i<3?cls[i]:''}" data-name="${r.name}">
       <div class="rbadge ${i<3?bc[i]:'n'}">${i+1}</div>
       ${rav(r.name)}
@@ -1076,8 +1071,7 @@ function renderList(id,rank,mode){
       <div class="rbar-wrap">
         <div class="rbar-segs">${renderBarSegs(r.score,dmax,bg)}</div>
         ${marks}
-        ${renderCar(id,r.score,dmax,bg,r.name)}
-        ${starHtml}
+        ${renderCar(id,r.score,dmax,bg,r.name,id==='list-semana')}
       </div>
       <span class="rscore">${r.score}</span>
       ${earnHtml}
@@ -1184,7 +1178,7 @@ function animateWeekBars(){
     if(star){
       star.classList.remove('wk-glow');
       star.style.transition='none';
-      star.style.transform='translate(-50%,50%) scale(0)'; // same centering as car-marker
+      star.style.transform='translate(-50%,-50%) scale(0)'; // same centering as car-marker
       star.style.opacity='1';
     }
     const carInner=row.querySelector('.rcar-inner');
@@ -1216,7 +1210,7 @@ function animateWeekBars(){
       if(star) setTimeout(()=>{
         void star.offsetWidth;
         star.style.transition='transform .55s cubic-bezier(.34,1.56,.64,1)';
-        star.style.transform='translate(-50%,50%) scale(1)';
+        star.style.transform='translate(-50%,-50%) scale(1)';
         setTimeout(()=>star.classList.add('wk-glow'),430);
       },BAR+80);
     },i*LAG);
@@ -1233,7 +1227,7 @@ function animateWeekBars(){
         star.classList.remove('wk-glow');
         void star.offsetWidth;
         star.style.transition=`transform ${STAR_FADE}ms ease-in,opacity ${STAR_FADE}ms ease`;
-        star.style.transform='translate(-50%,50%) scale(0)';
+        star.style.transform='translate(-50%,-50%) scale(0)';
         star.style.opacity='0';
       }
       // Photo fades in after star is fully gone
