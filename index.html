@@ -1079,7 +1079,7 @@ function renderList(id,rank,mode){
     </div>`;
   }).join('');
   // trigger week animation if already on semana view (data refresh case)
-  if(id==='list-semana' && VIEWS[curView]==='semana') setTimeout(animateWeekBars,150);
+  if(id==='list-semana' && VIEWS[curView]==='semana') setTimeout(animateWeekBars,50);
   // animate cars from old->new position and boost on sale
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     el.querySelectorAll('.rcar-marker').forEach(m=>{
@@ -1166,18 +1166,19 @@ function renderPodio(rank){
 function animateWeekBars(){
   const el=document.getElementById('list-semana');
   if(!el)return;
-  const BAR=980,CAR_AT=BAR-150,STAR_AT=BAR+100,STAR_ON=1400,STAR_FADE=320,LAG=120;
+  const BAR=1400,STAR_AT=BAR+100,STAR_ON=1200,STAR_FADE=320,LAG=130;
 
   // ── Reset everything instantly (no transitions) ──
-  el.querySelectorAll('.rbar-segs').forEach(b=>{
-    b.style.transition='none';b.style.clipPath='inset(0 100% 0 0)';
-  });
-  el.querySelectorAll('.rcar-star-wrap').forEach(s=>{
-    s.classList.remove('wk-glow');
-    s.style.cssText='transition:none;transform:translate(-50%,0) scale(0);opacity:1';
-  });
-  el.querySelectorAll('.rcar-marker').forEach(c=>{
-    c.style.transition='none';c.style.opacity='0';
+  el.querySelectorAll('.rrow').forEach(row=>{
+    row.querySelectorAll('.rbadge,.rav,.rname,.rscore,.rearning,.rbar-thresh').forEach(e=>{
+      e.style.transition='none';e.style.opacity='0';
+    });
+    const bar=row.querySelector('.rbar-segs');
+    if(bar){bar.style.transition='none';bar.style.clipPath='inset(0 100% 0 0)';}
+    const star=row.querySelector('.rcar-star-wrap');
+    if(star){star.classList.remove('wk-glow');star.style.cssText='transition:none;transform:translate(-50%,0) scale(0);opacity:1';}
+    const car=row.querySelector('.rcar-marker');
+    if(car){car.style.transition='none';car.style.opacity='0';}
   });
 
   // ── Animate rows: bottom → top ──
@@ -1189,35 +1190,37 @@ function animateWeekBars(){
     if(!bar)return;
     const d=i*LAG;
     setTimeout(()=>{
-      // 1. Bar grows left → right
+      // 1. Fade in badge + avatar + name + score + earnings (left side)
+      row.querySelectorAll('.rbadge,.rav,.rname,.rscore,.rearning').forEach(e=>{
+        e.style.transition='opacity .45s ease';e.style.opacity='1';
+      });
+      // 2. Bar grows left → right simultaneously
       bar.style.transition=`clip-path ${BAR}ms cubic-bezier(.25,.46,.45,.94)`;
       bar.style.clipPath='inset(0 0% 0 0)';
-
-      // 2. Photo (car) fades in just before bar finishes
-      if(car) setTimeout(()=>{
-        void car.offsetWidth;
-        car.style.transition='opacity .38s ease';
-        car.style.opacity='1';
-      },CAR_AT);
-
-      // 3. Star pops up after bar is done
-      if(star) {
+      // 3. Goal markers fade in mid-bar
+      setTimeout(()=>{
+        row.querySelectorAll('.rbar-thresh').forEach(m=>{
+          m.style.transition='opacity .5s ease';m.style.opacity='1';
+        });
+      },BAR/2);
+      // 4. Star pops after bar finishes
+      if(star) setTimeout(()=>{
+        star.style.transition='transform .52s cubic-bezier(.34,1.56,.64,1)';
+        star.style.transform='translate(-50%,0) scale(1)';
+        setTimeout(()=>star.classList.add('wk-glow'),420);
+        // 5. Star fades out after STAR_ON
         setTimeout(()=>{
-          void star.offsetWidth;
-          star.style.transition='transform .52s cubic-bezier(.34,1.56,.64,1)';
-          star.style.transform='translate(-50%,0) scale(1)';
-          // Start pulsing glow 420ms after pop (after bounce settles)
-          setTimeout(()=>star.classList.add('wk-glow'),420);
-
-          // 4. Star fades out after STAR_ON ms, leaving only the photo
-          setTimeout(()=>{
-            star.classList.remove('wk-glow');
-            star.style.transition=`transform ${STAR_FADE}ms ease-in,opacity ${STAR_FADE}ms ease`;
-            star.style.transform='translate(-50%,0) scale(0)';
-            star.style.opacity='0';
-          },STAR_ON);
-        },STAR_AT);
-      }
+          star.classList.remove('wk-glow');
+          star.style.transition=`transform ${STAR_FADE}ms ease-in,opacity ${STAR_FADE}ms ease`;
+          star.style.transform='translate(-50%,0) scale(0)';
+          star.style.opacity='0';
+          // 6. Car photo appears AFTER star is fully gone
+          if(car) setTimeout(()=>{
+            car.style.transition='opacity .42s ease';
+            car.style.opacity='1';
+          },STAR_FADE+40);
+        },STAR_ON);
+      },STAR_AT);
     },d);
   });
 }
