@@ -295,16 +295,39 @@ body::after{content:'';position:fixed;width:600px;height:600px;bottom:-120px;rig
   transform:translate(-50%,-50%) scale(0); /* center-center of the parent marker */
   pointer-events:none;z-index:12}
 .rcar-star-wrap.wk-glow{animation:wkStarGlow 1.8s ease-in-out infinite}
-.rcar-star{position:relative;width:44px;height:42px;
+.rcar-star{position:relative;width:54px;height:52px;
   display:flex;align-items:center;justify-content:center}
-.rcar-star::before{content:'\2605';font-size:2.6rem;color:#f7cb35;line-height:1;
-  text-shadow:0 1px 4px rgba(0,0,0,.6)}
+/* Estrela: cor quase-branca p/ o glow dourado aparecer bem no fundo escuro */
+.rcar-star::before{content:'\2605';font-size:3.1rem;color:#fffde7;line-height:1;
+  position:relative;z-index:2;
+  text-shadow:
+    0 0 3px #fff,
+    0 0 10px #f7cb35,
+    0 0 22px rgba(247,203,53,.95),
+    0 0 48px rgba(247,203,53,.5)}
+/* 4 raios de luz girando em torno da estrela */
+.rcar-star::after{content:'';position:absolute;inset:-12px;border-radius:50%;
+  background:conic-gradient(
+    transparent 0deg 77deg,rgba(255,255,210,.8) 79deg 83deg,
+    transparent 85deg 167deg,rgba(255,255,210,.65) 169deg 173deg,
+    transparent 175deg 257deg,rgba(255,255,210,.75) 259deg 263deg,
+    transparent 265deg 347deg,rgba(255,255,210,.6) 349deg 353deg,
+    transparent 355deg 360deg);
+  animation:wkRaySpin 2s linear infinite;pointer-events:none;z-index:1}
+@keyframes wkRaySpin{to{transform:rotate(360deg)}}
 .rcar-star-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  font-size:.8rem;font-weight:900;color:#000;line-height:1;padding-bottom:6px;
-  font-family:'Plus Jakarta Sans','Inter',sans-serif}
+  font-size:.82rem;font-weight:900;color:#1a0800;line-height:1;padding-bottom:8px;
+  font-family:'Plus Jakarta Sans','Inter',sans-serif;z-index:3}
+/* Glow pulsante na wrap (filter não conflita com transform do JS) */
 @keyframes wkStarGlow{
-  0%,100%{filter:drop-shadow(0 0 5px rgba(247,203,53,.65)) drop-shadow(0 0 12px rgba(247,203,53,.3))}
-  50%{filter:drop-shadow(0 0 14px rgba(247,203,53,1)) drop-shadow(0 0 28px rgba(247,203,53,.7))}}
+  0%,100%{filter:
+    drop-shadow(0 0 6px rgba(247,203,53,.85))
+    drop-shadow(0 0 18px rgba(247,203,53,.55))
+    drop-shadow(0 0 38px rgba(247,203,53,.25))}
+  50%{filter:
+    drop-shadow(0 0 18px rgba(247,203,53,1))
+    drop-shadow(0 0 40px rgba(247,203,53,.9))
+    drop-shadow(0 0 75px rgba(247,203,53,.55))}}
 /* ── FOGOS ── */
 #fw-canvas{position:fixed;inset:0;pointer-events:none;z-index:998;display:none}
 </style>
