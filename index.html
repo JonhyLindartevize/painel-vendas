@@ -1191,6 +1191,7 @@ function animateWeekBars(){
     const d=i*LAG;
     setTimeout(()=>{
       // 1. Fade in badge + avatar + name + score + earnings (left side)
+      void bar.offsetWidth; // reflow: commit all reset states before any transition
       row.querySelectorAll('.rbadge,.rav,.rname,.rscore,.rearning').forEach(e=>{
         e.style.transition='opacity .45s ease';e.style.opacity='1';
       });
@@ -1205,17 +1206,21 @@ function animateWeekBars(){
       },BAR/2);
       // 4. Star pops after bar finishes
       if(star) setTimeout(()=>{
+        // void reflow between transition-set and transform-change prevents browser batching
         star.style.transition='transform .52s cubic-bezier(.34,1.56,.64,1)';
+        void star.offsetWidth;
         star.style.transform='translate(-50%,0) scale(1)';
         setTimeout(()=>star.classList.add('wk-glow'),420);
         // 5. Star fades out after STAR_ON
         setTimeout(()=>{
           star.classList.remove('wk-glow');
+          void star.offsetWidth;
           star.style.transition=`transform ${STAR_FADE}ms ease-in,opacity ${STAR_FADE}ms ease`;
           star.style.transform='translate(-50%,0) scale(0)';
           star.style.opacity='0';
           // 6. Avatar circle appears AFTER star is fully gone
           if(carInner) setTimeout(()=>{
+            void carInner.offsetWidth;
             carInner.style.transition='opacity .42s ease';
             carInner.style.opacity='1';
           },STAR_FADE+40);
