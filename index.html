@@ -1015,11 +1015,11 @@ function renderCar(listId,score,max,color,name,showStar){
   const inits=initials(name);
   const bg=color.replace(/['"/]/g,'');
   const sz=36;
-  // for semana: car starts invisible and at final position (no slide-in)
+  // for semana: car starts at final position; avatar circle hidden (not marker — star is inside marker)
   const initLeft=showStar?newPct:oldPct;
-  const initOpacity=showStar?'opacity:0;':'';
-  return`<div class="rcar-marker" style="left:${initLeft}%;${initOpacity}" data-tgt="${newPct}" data-key="${key}">
-    <div class="rcar-inner" style="width:${sz}px;height:${sz}px;border-radius:50%;overflow:hidden;border:2.5px solid ${bg};box-sizing:border-box;position:relative;background:${bg};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;font-family:inherit;letter-spacing:.02em">
+  const innerOpa=showStar?'opacity:0;':''; // hide only the avatar circle, NOT the parent marker
+  return`<div class="rcar-marker" style="left:${initLeft}%" data-tgt="${newPct}" data-key="${key}">
+    <div class="rcar-inner" style="width:${sz}px;height:${sz}px;border-radius:50%;overflow:hidden;border:2.5px solid ${bg};box-sizing:border-box;position:relative;background:${bg};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;font-family:inherit;letter-spacing:.02em;${innerOpa}">
       <img src="fotos/${slug}.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block" onerror="if(!this.dataset.t){this.dataset.t=1;this.src='fotos/${slug}.jpeg'}else{this.style.display='none'}">
       ${inits}
     </div>
@@ -1177,8 +1177,8 @@ function animateWeekBars(){
     if(bar){bar.style.transition='none';bar.style.clipPath='inset(0 100% 0 0)';}
     const star=row.querySelector('.rcar-star-wrap');
     if(star){star.classList.remove('wk-glow');star.style.cssText='transition:none;transform:translate(-50%,0) scale(0);opacity:1';}
-    const car=row.querySelector('.rcar-marker');
-    if(car){car.style.transition='none';car.style.opacity='0';}
+    const carInner=row.querySelector('.rcar-inner');
+    if(carInner){carInner.style.transition='none';carInner.style.opacity='0';}
   });
 
   // ── Animate rows: bottom → top ──
@@ -1186,7 +1186,7 @@ function animateWeekBars(){
   rows.forEach((row,i)=>{
     const bar=row.querySelector('.rbar-segs');
     const star=row.querySelector('.rcar-star-wrap');
-    const car=row.querySelector('.rcar-marker');
+    const carInner=row.querySelector('.rcar-inner'); // the avatar circle (NOT the marker parent)
     if(!bar)return;
     const d=i*LAG;
     setTimeout(()=>{
@@ -1214,10 +1214,10 @@ function animateWeekBars(){
           star.style.transition=`transform ${STAR_FADE}ms ease-in,opacity ${STAR_FADE}ms ease`;
           star.style.transform='translate(-50%,0) scale(0)';
           star.style.opacity='0';
-          // 6. Car photo appears AFTER star is fully gone
-          if(car) setTimeout(()=>{
-            car.style.transition='opacity .42s ease';
-            car.style.opacity='1';
+          // 6. Avatar circle appears AFTER star is fully gone
+          if(carInner) setTimeout(()=>{
+            carInner.style.transition='opacity .42s ease';
+            carInner.style.opacity='1';
           },STAR_FADE+40);
         },STAR_ON);
       },STAR_AT);
