@@ -290,14 +290,20 @@ body::after{content:'';position:fixed;width:600px;height:600px;bottom:-120px;rig
   100%{transform:scale(1)}}
 }
 /* ── ESTRELA SEMANA ── */
-.rcar-star{position:absolute;bottom:calc(100% + 5px);left:50%;
+.rcar-star-wrap{position:absolute;bottom:calc(100% + 3px);left:50%;
   transform:translate(-50%,0) scale(0);
-  background:linear-gradient(135deg,#f7cb35,#d48c00);color:#000;
-  font-size:.68rem;font-weight:900;border-radius:10px;padding:3px 8px;
-  white-space:nowrap;pointer-events:none;z-index:10;
-  transition:transform .45s cubic-bezier(.34,1.56,.64,1);
-  box-shadow:0 2px 10px rgba(0,0,0,.5),0 0 12px rgba(247,203,53,.45)}
-.rcar-star.show{transform:translate(-50%,0) scale(1)}
+  pointer-events:none;z-index:11}
+.rcar-star-wrap.wk-glow{animation:wkStarGlow 1.8s ease-in-out infinite}
+.rcar-star{position:relative;width:42px;height:40px;
+  display:flex;align-items:center;justify-content:center}
+.rcar-star::before{content:'\2605';font-size:2.5rem;color:#f7cb35;line-height:1;
+  text-shadow:0 1px 4px rgba(0,0,0,.6)}
+.rcar-star-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:.76rem;font-weight:900;color:#000;line-height:1;padding-bottom:5px;
+  font-family:'Plus Jakarta Sans','Inter',sans-serif}
+@keyframes wkStarGlow{
+  0%,100%{filter:drop-shadow(0 0 5px rgba(247,203,53,.65)) drop-shadow(0 0 12px rgba(247,203,53,.3))}
+  50%{filter:drop-shadow(0 0 14px rgba(247,203,53,1)) drop-shadow(0 0 28px rgba(247,203,53,.7))}}
 /* ── FOGOS ── */
 #fw-canvas{position:fixed;inset:0;pointer-events:none;z-index:998;display:none}
 </style>
@@ -1009,12 +1015,15 @@ function renderCar(listId,score,max,color,name,showStar){
   const inits=initials(name);
   const bg=color.replace(/['"/]/g,'');
   const sz=36;
-  return`<div class="rcar-marker" style="left:${oldPct}%" data-tgt="${newPct}" data-key="${key}">
+  // for semana: car starts invisible and at final position (no slide-in)
+  const initLeft=showStar?newPct:oldPct;
+  const initOpacity=showStar?'opacity:0;':'';
+  return`<div class="rcar-marker" style="left:${initLeft}%;${initOpacity}" data-tgt="${newPct}" data-key="${key}">
     <div class="rcar-inner" style="width:${sz}px;height:${sz}px;border-radius:50%;overflow:hidden;border:2.5px solid ${bg};box-sizing:border-box;position:relative;background:${bg};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;font-family:inherit;letter-spacing:.02em">
       <img src="fotos/${slug}.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block" onerror="if(!this.dataset.t){this.dataset.t=1;this.src='fotos/${slug}.jpeg'}else{this.style.display='none'}">
       ${inits}
     </div>
-    ${showStar?`<div class="rcar-star">⭐ ${score}</div>`:''}
+    ${showStar?`<div class="rcar-star-wrap"><div class="rcar-star"><span class="rcar-star-num">${score}</span></div></div>`:''}
   </div>`;
 }
 
@@ -1069,13 +1078,8 @@ function renderList(id,rank,mode){
       ${earnHtml}
     </div>`;
   }).join('');
-  // for semana, immediately hide bars so animateWeekBars() can reveal them
-  if(id==='list-semana'){
-    el.querySelectorAll('.rbar-segs').forEach(b=>{
-      b.style.clipPath='inset(0 100% 0 0)';
-      b.style.transition='none';
-    });
-  }
+  // trigger week animation if already on semana view (data refresh case)
+  if(id==='list-semana' && VIEWS[curView]==='semana') setTimeout(animateWeekBars,150);
   // animate cars from old->new position and boost on sale
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     el.querySelectorAll('.rcar-marker').forEach(m=>{
@@ -1162,25 +1166,59 @@ function renderPodio(rank){
 function animateWeekBars(){
   const el=document.getElementById('list-semana');
   if(!el)return;
-  // reset all bars and stars first
+  const BAR=980,CAR_AT=BAR-150,STAR_AT=BAR+100,STAR_ON=1400,STAR_FADE=320,LAG=120;
+
+  // ── Reset everything instantly (no transitions) ──
   el.querySelectorAll('.rbar-segs').forEach(b=>{
-    b.style.transition='none';
-    b.style.clipPath='inset(0 100% 0 0)';
+    b.style.transition='none';b.style.clipPath='inset(0 100% 0 0)';
   });
-  el.querySelectorAll('.rcar-star').forEach(s=>s.classList.remove('show'));
-  // rows from bottom to top
+  el.querySelectorAll('.rcar-star-wrap').forEach(s=>{
+    s.classList.remove('wk-glow');
+    s.style.cssText='transition:none;transform:translate(-50%,0) scale(0);opacity:1';
+  });
+  el.querySelectorAll('.rcar-marker').forEach(c=>{
+    c.style.transition='none';c.style.opacity='0';
+  });
+
+  // ── Animate rows: bottom → top ──
   const rows=[...el.querySelectorAll('.rrow')].reverse();
   rows.forEach((row,i)=>{
     const bar=row.querySelector('.rbar-segs');
-    const star=row.querySelector('.rcar-star');
+    const star=row.querySelector('.rcar-star-wrap');
+    const car=row.querySelector('.rcar-marker');
     if(!bar)return;
-    const segs=bar.querySelectorAll('.bseg.on').length;
-    const dur=Math.max(500,Math.min(segs*18+300,900));
+    const d=i*LAG;
     setTimeout(()=>{
-      bar.style.transition=`clip-path ${dur}ms cubic-bezier(.25,.46,.45,.94)`;
+      // 1. Bar grows left → right
+      bar.style.transition=`clip-path ${BAR}ms cubic-bezier(.25,.46,.45,.94)`;
       bar.style.clipPath='inset(0 0% 0 0)';
-      if(star) setTimeout(()=>star.classList.add('show'),dur-80);
-    },i*90);
+
+      // 2. Photo (car) fades in just before bar finishes
+      if(car) setTimeout(()=>{
+        void car.offsetWidth;
+        car.style.transition='opacity .38s ease';
+        car.style.opacity='1';
+      },CAR_AT);
+
+      // 3. Star pops up after bar is done
+      if(star) {
+        setTimeout(()=>{
+          void star.offsetWidth;
+          star.style.transition='transform .52s cubic-bezier(.34,1.56,.64,1)';
+          star.style.transform='translate(-50%,0) scale(1)';
+          // Start pulsing glow 420ms after pop (after bounce settles)
+          setTimeout(()=>star.classList.add('wk-glow'),420);
+
+          // 4. Star fades out after STAR_ON ms, leaving only the photo
+          setTimeout(()=>{
+            star.classList.remove('wk-glow');
+            star.style.transition=`transform ${STAR_FADE}ms ease-in,opacity ${STAR_FADE}ms ease`;
+            star.style.transform='translate(-50%,0) scale(0)';
+            star.style.opacity='0';
+          },STAR_ON);
+        },STAR_AT);
+      }
+    },d);
   });
 }
 
