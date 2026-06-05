@@ -1687,26 +1687,27 @@ function updateUI(data){
   set('st-mes',    sum(monR)+' contratos');
   updateMetaMes(sum(monR));
 
-  // acidente — pega range de datas do próprio sheet
-  const acidDates=data.acidente.dateCols;
-  const acidRange=acidDates.length?fmtShort(acidDates[0].ds)+' – '+fmtShort(acidDates[acidDates.length-1].ds):'–';
+  // período do mês inteiro (01/MM – último_dia/MM) para acidente e loas
+  const _mm=String(selMonDate.getMonth()+1).padStart(2,'0');
+  const _lastDay=new Date(selMonDate.getFullYear(),selMonDate.getMonth()+1,0).getDate();
+  const monPeriod='01/'+_mm+' – '+String(_lastDay).padStart(2,'0')+'/'+_mm;
+
+  // acidente
   renderList('list-acidente',acidR);
-  set('sp-acidente', acidRange);
+  set('sp-acidente', monPeriod);
   set('st-acidente', sum(acidR)+' contratos');
   updateMetaAA(sum(acidR));
   renderTabela(data.acidente.employees,data.acidente.dateCols,'tabela-acidente-wrap',true);
-  set('sp-tabela-acidente',acidRange);
+  set('sp-tabela-acidente',monPeriod);
   set('st-tabela-acidente',sum(acidR)+' contratos');
 
   // loas
-  const lDates=data.loas.dateCols;
-  const loasRange=lDates.length?fmtShort(lDates[0].ds)+' – '+fmtShort(lDates[lDates.length-1].ds):'–';
   renderList('list-loas',loasR);
-  set('sp-loas', loasRange);
+  set('sp-loas', monPeriod);
   set('st-loas', sum(loasR)+' contratos');
   updateMetaBPC(sum(loasR));
   renderTabela(data.loas.employees,data.loas.dateCols,'tabela-loas-wrap',true);
-  set('sp-tabela-loas',loasRange);
+  set('sp-tabela-loas',monPeriod);
   set('st-tabela-loas',sum(loasR)+' contratos');
 
   set('ts','🔄 '+now.toLocaleTimeString('pt-BR'));
