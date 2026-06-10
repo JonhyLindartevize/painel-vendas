@@ -844,46 +844,14 @@ function tone(f,t0,dur,type='triangle',vol=.25){
 }
 function playSale(){ensureCtx();[[523,0],[659,.09],[784,.18],[1046,.27],[1319,.36],[1568,.45],[2093,.54]].forEach(([f,t])=>tone(f,t,.6,'sine',.35));}
 function playGol(){
-  ensureCtx();
-  const now=actx.currentTime,dur=5;
-  // torcida (ruído filtrado que cresce)
-  const sr=actx.sampleRate,nb=actx.createBuffer(1,sr*dur,sr),nd=nb.getChannelData(0);
-  for(let i=0;i<nd.length;i++) nd[i]=Math.random()*2-1;
-  const ns=actx.createBufferSource();ns.buffer=nb;
-  const bp=actx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=520;bp.Q.value=0.5;
-  const ng=actx.createGain();
-  ng.gain.setValueAtTime(0,now);ng.gain.linearRampToValueAtTime(.16,now+.25);
-  ng.gain.linearRampToValueAtTime(.3,now+2);ng.gain.setValueAtTime(.3,now+3.8);ng.gain.linearRampToValueAtTime(0,now+dur);
-  ns.connect(bp);bp.connect(ng);ng.connect(actx.destination);ns.start(now);ns.stop(now+dur);
-  // corneta/buzina de estádio (sawtooth em camadas)
-  [[110,.2],[220,.11],[330,.07]].forEach(([f,v])=>{
-    const o=actx.createOscillator();o.type='sawtooth';o.frequency.value=f;
-    const lp=actx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=650;
-    const g=actx.createGain();
-    g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(v,now+.06);
-    g.gain.setValueAtTime(v,now+4);g.gain.linearRampToValueAtTime(0,now+dur);
-    o.connect(lp);lp.connect(g);g.connect(actx.destination);o.start(now);o.stop(now+dur);
-  });
-  // "Goooooooool" — sweep ascendente com vibrato
-  const go=actx.createOscillator();go.type='sine';
-  go.frequency.setValueAtTime(155,now+.06);
-  go.frequency.exponentialRampToValueAtTime(360,now+2.8);
-  go.frequency.setValueAtTime(360,now+4);go.frequency.linearRampToValueAtTime(240,now+dur);
-  const vib=actx.createOscillator();vib.type='sine';vib.frequency.value=5.5;
-  const vg=actx.createGain();vg.gain.setValueAtTime(0,now);vg.gain.linearRampToValueAtTime(7,now+.7);
-  vib.connect(vg);vg.connect(go.frequency);vib.start(now);vib.stop(now+dur);
-  const gg=actx.createGain();
-  gg.gain.setValueAtTime(0,now);gg.gain.linearRampToValueAtTime(.38,now+.2);
-  gg.gain.setValueAtTime(.38,now+4);gg.gain.linearRampToValueAtTime(0,now+dur);
-  go.connect(gg);gg.connect(actx.destination);go.start(now+.06);go.stop(now+dur);
-  // socos rítmicos "Gol! Gol! Gol!" da torcida
-  [0,.52,1.1,1.78,2.55,3.45].forEach((t,i)=>{
-    const o=actx.createOscillator();o.type='triangle';
-    const f=190+i*16;o.frequency.setValueAtTime(f,now+t);o.frequency.linearRampToValueAtTime(f*1.38,now+t+.18);
-    const g=actx.createGain();
-    g.gain.setValueAtTime(0,now+t);g.gain.linearRampToValueAtTime(.32,now+t+.025);
-    g.gain.exponentialRampToValueAtTime(.001,now+t+.42);
-    o.connect(g);g.connect(actx.destination);o.start(now+t);o.stop(now+t+.45);
+  // tenta tocar gol.mp3 — coloque o arquivo na pasta do projeto
+  const a=new Audio('gol.mp3');
+  a.volume=1;
+  a.play().catch(()=>{
+    // fallback: fanfarra se arquivo não encontrado
+    ensureCtx();
+    [[392,0,.1,.3],[523,.13,.1,.32],[659,.26,.1,.34],[784,.4,.55,.4]]
+      .forEach(([f,t,d,v])=>tone(f,t,d,'triangle',v));
   });
 }
 function playCancel(){ensureCtx();[[523,0,.09,.28],[587,.12,.09,.28],[659,.24,.09,.28],[698,.36,.09,.3],[784,.48,.09,.3],[880,.60,.09,.3],[988,.72,.09,.32],[1046,.84,.6,.45]].forEach(([f,t,d,v])=>tone(f,t,d,'triangle',v));[[1046,.9,.6,'sine',.3],[1319,.9,.6,'sine',.22],[1568,.9,.6,'sine',.18]].forEach(([f,t,d,v])=>tone(f,t,d,'sine',v));}
