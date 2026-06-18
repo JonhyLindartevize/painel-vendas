@@ -478,6 +478,7 @@ body::after{content:'';position:fixed;width:600px;height:600px;bottom:-120px;rig
   <button id="btn-pause" title="Pausar / Retomar (Espaço)">&#9646;&#9646;</button>
   <button id="btn-next" title="Próxima (→)">&#9654;</button>
   <span id="ctrl-sync"></span>
+  <button id="som-btn" title="Ativar som" onclick="ensureCtx();_loadGolBuffers();this.style.opacity='.5'" style="background:none;border:none;font-size:1.3rem;cursor:pointer;opacity:.35;padding:0 6px" >🔇</button>
 </div>
 <canvas id="fw-canvas"></canvas>
 <div id="spotlight" style="display:none"><div class="sl-inner"></div></div>
@@ -845,10 +846,34 @@ function tone(f,t0,dur,type='triangle',vol=.25){
 function playSale(){ensureCtx();[[523,0],[659,.09],[784,.18],[1046,.27],[1319,.36],[1568,.45],[2093,.54]].forEach(([f,t])=>tone(f,t,.6,'sine',.35));}
 let _golIdx=0;
 const _golFiles=['gol.mp3','gol2.mp3','gol3.mp3','gol4.mp3','gol5.mp3'];
+let _golBuffers=null;
+async function _loadGolBuffers(){
+  if(_golBuffers)return;
+  ensureCtx();
+  if(!actx)return;
+  try{
+    _golBuffers=await Promise.all(_golFiles.map(async f=>{
+      const r=await fetch(f);const b=await r.arrayBuffer();
+      return actx.decodeAudioData(b);
+    }));
+    const btn=document.getElementById('som-btn');
+    if(btn)btn.textContent='🔊';
+  }catch(e){_golBuffers=null;}
+}
 function playGol(){
-  const file=_golFiles[_golIdx%_golFiles.length];
+  const idx=_golIdx%_golFiles.length;
   _golIdx++;
-  const a=new Audio(file);
+  if(_golBuffers&&_golBuffers[idx]&&actx){
+    actx.resume().then(()=>{
+      const src=actx.createBufferSource();
+      src.buffer=_golBuffers[idx];
+      src.connect(actx.destination);
+      src.start(0);
+      setTimeout(()=>{try{src.stop();}catch(_){}},21000);
+    });
+    return;
+  }
+  const a=new Audio(_golFiles[idx]);
   a.volume=1;
   a.play().then(()=>{
     setTimeout(()=>{a.pause();a.currentTime=0;},21000);
@@ -1752,8 +1777,8 @@ async function refresh(){
 async function init(){
   const de=document.getElementById('dots');
   VIEWS.forEach(()=>{const d=document.createElement('div');d.className='dot';de.appendChild(d);});
-  document.addEventListener('click',()=>ensureCtx(),{once:true});
-  document.addEventListener('keydown',()=>ensureCtx(),{once:true});
+  document.addEventListener('click',()=>{ensureCtx();_loadGolBuffers();},{once:true});
+  document.addEventListener('keydown',()=>{ensureCtx();_loadGolBuffers();},{once:true});
   try{
     await refresh();
     document.getElementById('loading').style.display='none';
