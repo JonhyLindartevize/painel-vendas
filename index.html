@@ -888,8 +888,8 @@ function playOvertake(){ensureCtx();tone(65,0,.8,'sawtooth',.42);tone(130,.05,.6
 function playPodium(){ensureCtx();[[523.25,0,.18],[523.25,.18,.12],[523.25,.3,.12],[659.25,.42,.45],[523.25,.87,.5],[784,.42,.45]].forEach(([f,t,d])=>tone(f,t,d,'square',.18));}
 function handleEvents(evts){
   if(!evts.length) return;
-  if(evts.find(e=>e.type==='podium')){playPodium();celebrate();launchFireworks(5);return;}
-  if(evts.find(e=>e.type==='overtake')){playOvertake();return;}
+  if(evts.find(e=>e.type==='podium')){celebrate();launchFireworks(5);return;}
+  if(evts.find(e=>e.type==='overtake')){return;}
   const s=evts.filter(e=>e.type==='sale');
   if(s.length){s.forEach(e=>pendingBoosts.add(e.who));playGol();celebrate();launchFireworks(4);showTicker('⚽ GOOOL! '+s.map(e=>e.who).join(' e ')+' fechou um contrato!');enqueueSale(s.map(e=>e.who));return;}
   const c=evts.filter(e=>e.type==='cancel');
