@@ -845,7 +845,7 @@ function tone(f,t0,dur,type='triangle',vol=.25){
 }
 function playSale(){ensureCtx();[[523,0],[659,.09],[784,.18],[1046,.27],[1319,.36],[1568,.45],[2093,.54]].forEach(([f,t])=>tone(f,t,.6,'sine',.35));}
 let _golIdx=0;
-const _golFiles=['gol.mp3','gol2.mp3','gol3.mp3','gol4.mp3','gol5.mp3'];
+const _golFiles=['gol.mp3'];
 let _golBuffers=null;
 async function _loadGolBuffers(){
   if(_golBuffers)return;
