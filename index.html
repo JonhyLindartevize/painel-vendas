@@ -1714,7 +1714,7 @@ function renderTabelaFromWeeklySummary(wrapId){
 
 function updateUI(data){
   const now=new Date();
-  Object.values(data.monthly.employees).forEach(e=>{monSatCount[e.name]=Object.entries(e.daily).filter(([ds])=>new Date(ds).getDay()===6).reduce((s,[,v])=>s+v,0);});
+  Object.values(data.monthly.employees).forEach(e=>{monSatCount[e.name]=Object.entries(e.daily).filter(([ds])=>{const w=new Date(ds+'T12:00:00').getDay();return w===0||w===6;}).reduce((s,[,v])=>s+v,0);});
   const monR  =ranking(data.monthly.employees,  monthScore);
   const todR  =ranking(data.general.employees,  todayScore);
   const wkR   =ranking(data.general.employees,  weekScore);
