@@ -34,6 +34,7 @@ body::after{content:'';position:fixed;width:600px;height:600px;bottom:-120px;rig
   display:flex;align-items:center;gap:7px;font-weight:700}
 .sdot{width:7px;height:7px;border-radius:50%;background:#22c55e;animation:blink 2s ease-in-out infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes somPulse{0%,100%{transform:translateX(-50%) scale(1);box-shadow:0 4px 24px rgba(0,0,0,.5)}50%{transform:translateX(-50%) scale(1.05);box-shadow:0 4px 32px rgba(245,197,24,.7)}}
 #dots{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:9px;z-index:200}
 .dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.18);transition:all .4s cubic-bezier(.34,1.56,.64,1)}
 .dot.on{background:var(--gold);transform:scale(1.8);box-shadow:0 0 8px rgba(247,203,53,.6)}
@@ -479,6 +480,7 @@ body::after{content:'';position:fixed;width:600px;height:600px;bottom:-120px;rig
   <button id="btn-next" title="Próxima (→)">&#9654;</button>
   <span id="ctrl-sync"></span>
   <button id="som-btn" title="Ativar som" onclick="ensureCtx();_loadGolBuffers();this.style.opacity='.5'" style="background:none;border:none;font-size:1.3rem;cursor:pointer;opacity:.35;padding:0 6px" >🔇</button>
+  <div id="som-banner" onclick="ensureCtx();_loadGolBuffers();document.getElementById('som-banner').style.display='none'" style="position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:#f5c518;color:#000;font-weight:900;font-size:1rem;padding:12px 28px;border-radius:999px;cursor:pointer;z-index:9999;box-shadow:0 4px 24px rgba(0,0,0,.5);animation:somPulse 1.8s ease-in-out infinite;letter-spacing:.03em;white-space:nowrap">🔇 Clique aqui para ativar o som</div>
 </div>
 <canvas id="fw-canvas"></canvas>
 <div id="spotlight" style="display:none"><div class="sl-inner"></div></div>
@@ -858,6 +860,8 @@ async function _loadGolBuffers(){
     }));
     const btn=document.getElementById('som-btn');
     if(btn)btn.textContent='🔊';
+    const banner=document.getElementById('som-banner');
+    if(banner)banner.style.display='none';
   }catch(e){_golBuffers=null;}
 }
 function playGol(){
