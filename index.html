@@ -1060,13 +1060,11 @@ function calcWeekEarn(s){
 function calcMonEarn(score,sat){
   sat=sat||0;
   if(score<20)return 0;
-  const satEarn=sat*20;
   const reg=score-sat;
-  const regBase=Math.min(reg,Math.max(0,20-sat));
-  const regAbove=Math.max(0,reg-Math.max(0,20-sat));
-  const regEarn=regBase*10+regAbove*15;
+  const regEarn=reg*15;
+  const satEarn=sat*25;
   const t=[...MON_BONUS].reverse().find(t=>score>=t.n);
-  return satEarn+regEarn+(t?t.v:0);
+  return regEarn+satEarn+(t?t.v:0);
 }
 function threshMarkers(max,bonuses,rowScore){
   if(!bonuses||!max)return'';
@@ -1143,7 +1141,7 @@ function renderList(id,rank,mode){
       const earn=mode==='week'?calcWeekEarn(r.score):calcMonEarn(r.score,monSatCount[r.name]);
       let nextTxt='';
       if(mode==='month'&&r.score<20){
-        nextTxt='faltam '+(20-r.score)+' para base (mín. R$ 200)';
+        nextTxt='faltam '+(20-r.score)+' para base (mín. R$ 300)';
       } else {
         const ng=bonuses.find(t=>t.n>r.score);
         nextTxt=ng?`faltam ${ng.n-r.score} → R$${ng.v}`:earn>0?'🏆 máx.':'';
@@ -1443,7 +1441,7 @@ function buildSlHTML(name,wScore,mScore){
     else{wMsg='B\u00f4nus m\u00e1ximo da semana atingido! Voc\u00ea \u00e9 incr\u00edvel! \uD83C\uDFC6';}}
   {const mNg=MON_BONUS.find(t=>t.n>mScore);
     if(mScore<20){const f=20-mScore;
-      mMsg='Faltam <b>'+f+'</b> contrato'+(f!==1?'s':'')+' para a base (<b>R$\u00a0200,00</b>).';
+      mMsg='Faltam <b>'+f+'</b> contrato'+(f!==1?'s':'')+' para a base (<b>R\$\u00a0300,00</b>).';
       if(mNg)mMsg+='<br><br>E mais <b>R$\u00a0'+mNg.v+',00</b> de b\u00f4nus ao fechar <b>'+mNg.n+'</b> contratos!';}
     else if(mNg){const f=mNg.n-mScore;
       mMsg='Faltam <b>'+f+'</b> contrato'+(f!==1?'s':'')+' para o b\u00f4nus de <b>R$\u00a0'+mNg.v+',00</b> ('+mNg.n+' contratos)!';}
@@ -1494,7 +1492,7 @@ function buildSaleHTML(name,wScore,mScore,remaining){
   if(mScore===0){mMsg='O mês ainda tem muito tempo! Vamos fechar contratos! 💪';}
   else{const mNg=MON_BONUS.find(t=>t.n>mScore);
     if(mScore<20){const f=20-mScore;
-      mMsg='Faltam <b>'+f+'</b> contrato'+(f!==1?'s':'')+' para a base (<b>R$ 200,00</b>).';
+      mMsg='Faltam <b>'+f+'</b> contrato'+(f!==1?'s':'')+' para a base (<b>R$ 300,00</b>).';
       if(mNg)mMsg+='<br>E mais <b>R$ '+mNg.v+',00</b> de bônus ao fechar <b>'+mNg.n+'</b> contratos!';}
     else if(mNg){const f=mNg.n-mScore;
       mMsg='Faltam <b>'+f+'</b> contrato'+(f!==1?'s':'')+' para o bônus de <b>R$ '+mNg.v+',00</b> ('+mNg.n+' contratos)!';}
