@@ -891,12 +891,37 @@ function playGol(){
   });
 }
 function playCancel(){ensureCtx();[[523,0,.09,.28],[587,.12,.09,.28],[659,.24,.09,.28],[698,.36,.09,.3],[784,.48,.09,.3],[880,.60,.09,.3],[988,.72,.09,.32],[1046,.84,.6,.45]].forEach(([f,t,d,v])=>tone(f,t,d,'triangle',v));[[1046,.9,.6,'sine',.3],[1319,.9,.6,'sine',.22],[1568,.9,.6,'sine',.18]].forEach(([f,t,d,v])=>tone(f,t,d,'sine',v));}
-function playOvertake(){ensureCtx();tone(65,0,.8,'sawtooth',.42);tone(130,.05,.65,'square',.26);[[392,.12,.12,.3],[494,.27,.12,.32],[587,.42,.12,.32],[740,.57,.09,.3],[880,.66,.09,.3],[1046,.75,.09,.3],[1319,.84,.09,.32],[1046,.93,.08,.28],[1319,1.01,.08,.3],[1568,1.09,.75,.48]].forEach(([f,t,d,v])=>tone(f,t,d,'triangle',v));[[1046,1.12,.9,.3],[1319,1.12,.9,.22],[1568,1.12,.9,.18]].forEach(([f,t,d,v])=>tone(f,t,d,'sine',v));}
+let _overtakeBuffer=null;
+async function _loadOvertakeBuffer(){
+  if(_overtakeBuffer)return;
+  ensureCtx();
+  if(!actx)return;
+  try{
+    const r=await fetch('overtake.mp3');const b=await r.arrayBuffer();
+    _overtakeBuffer=await actx.decodeAudioData(b);
+  }catch(e){_overtakeBuffer=null;}
+}
+function playOvertake(){
+  if(_overtakeBuffer&&actx){
+    actx.resume().then(()=>{
+      const src=actx.createBufferSource();
+      const gain=actx.createGain();
+      gain.gain.value=2.5;
+      src.buffer=_overtakeBuffer;
+      src.connect(gain);
+      gain.connect(actx.destination);
+      src.start(0);
+      setTimeout(()=>{try{src.stop();}catch(_){}},10000);
+    });
+    return;
+  }
+  ensureCtx();[[392,.12,.12,.3],[494,.27,.12,.32],[587,.42,.12,.32],[1568,1.09,.75,.48]].forEach(([f,t,d,v])=>tone(f,t,d,'triangle',v));
+}
 function playPodium(){ensureCtx();[[523.25,0,.18],[523.25,.18,.12],[523.25,.3,.12],[659.25,.42,.45],[523.25,.87,.5],[784,.42,.45]].forEach(([f,t,d])=>tone(f,t,d,'square',.18));}
 function handleEvents(evts){
   if(!evts.length) return;
   if(evts.find(e=>e.type==='podium')){celebrate();launchFireworks(5);return;}
-  if(evts.find(e=>e.type==='overtake')){return;}
+  if(evts.find(e=>e.type==='overtake')){playOvertake();return;}
   const s=evts.filter(e=>e.type==='sale');
   if(s.length){s.forEach(e=>pendingBoosts.add(e.who));playGol();celebrate();launchFireworks(4);showTicker('⚽ GOOOL! '+s.map(e=>e.who).join(' e ')+' fechou um contrato!');enqueueSale(s.map(e=>e.who));return;}
   const c=evts.filter(e=>e.type==='cancel');
@@ -1784,8 +1809,8 @@ async function refresh(){
 async function init(){
   const de=document.getElementById('dots');
   VIEWS.forEach(()=>{const d=document.createElement('div');d.className='dot';de.appendChild(d);});
-  document.addEventListener('click',()=>{ensureCtx();_loadGolBuffers();},{once:true});
-  document.addEventListener('keydown',()=>{ensureCtx();_loadGolBuffers();},{once:true});
+  document.addEventListener('click',()=>{ensureCtx();_loadGolBuffers();_loadOvertakeBuffer();},{once:true});
+  document.addEventListener('keydown',()=>{ensureCtx();_loadGolBuffers();_loadOvertakeBuffer();},{once:true});
   try{
     await refresh();
     document.getElementById('loading').style.display='none';
