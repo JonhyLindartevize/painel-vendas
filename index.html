@@ -870,8 +870,11 @@ function playGol(){
   if(_golBuffers&&_golBuffers[idx]&&actx){
     actx.resume().then(()=>{
       const src=actx.createBufferSource();
+      const gain=actx.createGain();
+      gain.gain.value=2.5;
       src.buffer=_golBuffers[idx];
-      src.connect(actx.destination);
+      src.connect(gain);
+      gain.connect(actx.destination);
       src.start(0);
       setTimeout(()=>{try{src.stop();}catch(_){}},21000);
     });
