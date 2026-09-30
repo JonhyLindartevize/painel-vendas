@@ -165,7 +165,6 @@ body::after{content:'';position:fixed;width:600px;height:600px;bottom:-120px;rig
 /* ── EARNINGS ── */
 .rearning{min-width:82px;text-align:right;white-space:nowrap;line-height:1.3;flex-shrink:0}
 .reval{display:block;font-size:.9rem;font-weight:800;color:#0fce8a;letter-spacing:.01em}
-.rplus{display:block;font-size:.54rem;font-weight:700;margin-top:1px}
 .rnext{display:block;font-size:.54rem;font-weight:700;color:rgba(255,255,255,.38);margin-top:1px}
 .rlist.compact .reval{font-size:.76rem}
 .rlist.compact .rnext{font-size:.5rem}
@@ -1049,8 +1048,6 @@ function rav(name,sz=50){
 // METAS E PREMIAÇÃO
 // ═══════════════════════════════════
 const WEEK_BONUS=[{n:8,v:150},{n:10,v:200},{n:15,v:250}];
-const WEEK_PLUS =[{n:8,v:75}, {n:10,v:100},{n:15,v:125}];
-function calcPlusEarn(onTime){const t=[...WEEK_PLUS].reverse().find(t=>onTime>=t.n);return t?t.v:0;}
 const MON_BONUS=[{n:30,v:300},{n:35,v:400},{n:40,v:600},{n:45,v:900},{n:50,v:1200},{n:55,v:1350},{n:60,v:1500},{n:70,v:1700}];
 
 function calcWeekEarn(s){
@@ -1146,16 +1143,7 @@ function renderList(id,rank,mode){
         const ng=bonuses.find(t=>t.n>r.score);
         nextTxt=ng?`faltam ${ng.n-r.score} → R$${ng.v}`:earn>0?'🏆 máx.':'';
       }
-      let plusHtml='';
-      if(mode==='week'){
-        const pd=weekPlusData[normName(r.name)]||{total:0,onTime:0};
-        if(pd.total>0){
-          const pe=calcPlusEarn(pd.onTime);
-          const c=pd.onTime===pd.total?'#0fce8a':pd.onTime>0?'#f7cb35':'rgba(255,255,255,.35)';
-          plusHtml=`<span class="rplus" style="color:${c}">${pd.onTime}/${pd.total} prazo${pe>0?' +R$'+pe:''}</span>`;
-        }
-      }
-      earnHtml=`<div class="rearning"><span class="reval">${fmtBRL(earn)}</span>${plusHtml}<span class="rnext">${nextTxt}</span></div>`;
+      earnHtml=`<div class="rearning"><span class="reval">${fmtBRL(earn)}</span><span class="rnext">${nextTxt}</span></div>`;
     }
     return `<div class="rrow ${i<3?cls[i]:''}" data-name="${r.name}">
       <div class="rbadge ${i<3?bc[i]:'n'}">${i+1}</div>
@@ -1367,7 +1355,6 @@ function updateMetaBPC(total){
     document.getElementById('falta-bpc-val'),
     document.getElementById('meta-bpc-val'));
 }
-let weekPlusData={};
 function parseGvizDate(v){
   if(typeof v==='number')return v;
   if(typeof v==='string'){
@@ -1392,17 +1379,13 @@ async function fetchPlusData(wk){
     const now=new Date();
     const dow=now.getDay()||7;
     const mon=new Date(now);mon.setDate(now.getDate()-(dow-1));
-    const monDays=Date.UTC(mon.getFullYear(),mon.getMonth(),mon.getDate())/86400000;
-    const sunDays=monDays+6;
     const rows=(table||{}).rows||[];
-    const result={};
     const wkly={};
     for(let i=1;i<rows.length;i++){
       const row=rows[i];
       if(!row||!row.c)continue;
       const seller=(row.c[1]?.v||'').trim();
       const kv=row.c[10]?.v;
-      const lv=row.c[11]?.v;
       if(!seller||!kv)continue;
       const kn=parseGvizDate(kv);
       if(kn===null)continue;
@@ -1412,22 +1395,11 @@ async function fetchPlusData(wk){
       const mStr=kDayToMonStr(kDay);
       if(!wkly[mStr])wkly[mStr]={};
       wkly[mStr][sKey]=(wkly[mStr][sKey]||0)+1;
-      // plus-data only for current week
-      if(kDay>=monDays&&kDay<=sunDays){
-        if(!result[sKey])result[sKey]={total:0,onTime:0};
-        result[sKey].total++;
-        const ln=parseGvizDate(lv);
-        if(ln!==null){const diff=Math.floor(ln)-kDay;if(diff>=0&&diff<=2)result[sKey].onTime++;}
-      }
     }
-    weekPlusData=result;
     // Only apply current week's data from Dados gerais — past weeks come from tabelasWeekly (complete)
     const curMonKey=mon.getFullYear()+'-'+String(mon.getMonth()+1).padStart(2,'0')+'-'+String(mon.getDate()).padStart(2,'0');
     if(wkly[curMonKey]) weeklySummary[curMonKey]=wkly[curMonKey];
-    return result;
-  }catch(e){
-    return {};
-  }
+  }catch(e){}
 }
 let currentWkR=[],currentMonR=[];
 let slIdx=0,slViewCount=0,slTimer=null;
