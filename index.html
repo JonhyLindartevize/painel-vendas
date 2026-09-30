@@ -1420,6 +1420,7 @@ function kDayToMonStr(kDay){
   const m=new Date(monDay*86400000);
   return m.getUTCFullYear()+'-'+String(m.getUTCMonth()+1).padStart(2,'0')+'-'+String(m.getUTCDate()).padStart(2,'0');
 }
+let monthBySvc={};
 async function fetchWeeklyFromSheet(){
   try{
     const table=await fetchSheet('Dados gerais');
@@ -1427,7 +1428,7 @@ async function fetchWeeklyFromSheet(){
     const dow=now.getDay()||7;
     const mon=new Date(now);mon.setDate(now.getDate()-(dow-1));
     const rows=(table||{}).rows||[];
-    const wkly={};
+    const wkly={},bySvc={};
     for(let i=1;i<rows.length;i++){
       const row=rows[i];
       if(!row||!row.c)continue;
@@ -1442,7 +1443,17 @@ async function fetchWeeklyFromSheet(){
       const mStr=kDayToMonStr(kDay);
       if(!wkly[mStr])wkly[mStr]={};
       wkly[mStr][sKey]=(wkly[mStr][sKey]||0)+1;
+      const svc=String(row.c[4]?.v||'');
+      const tipo=/acidente/i.test(svc)?'AA':/defici/i.test(svc)?'BPC':null;
+      if(tipo){
+        const dt=new Date(kDay*86400000);
+        const mk=dt.getUTCFullYear()+'-'+String(dt.getUTCMonth()+1).padStart(2,'0');
+        const m=(bySvc[mk]=bySvc[mk]||{AA:{},BPC:{}});
+        const e=(m[tipo][sKey]=m[tipo][sKey]||{name:seller,total:0});
+        e.total++;
+      }
     }
+    monthBySvc=bySvc;
     // Only apply current week's data from Dados gerais — past weeks come from tabelasWeekly (complete)
     const curMonKey=mon.getFullYear()+'-'+String(mon.getMonth()+1).padStart(2,'0')+'-'+String(mon.getDate()).padStart(2,'0');
     if(wkly[curMonKey]) weeklySummary[curMonKey]=wkly[curMonKey];
@@ -1737,8 +1748,14 @@ function updateUI(data){
   const monR  =ranking(data.monthly.employees,  monthScore);
   const todR  =ranking(data.general.employees,  todayScore);
   const wkR   =ranking(data.general.employees,  weekScore);
-  const acidR =ranking(data.acidente.employees, e=>e.total);
-  const loasR =ranking(data.loas.employees,     e=>e.total);
+  const selMonDate=monthForOff(monOff);
+  const selMonKey=selMonDate.getFullYear()+'-'+String(selMonDate.getMonth()+1).padStart(2,'0');
+  const svcMon=monthBySvc[selMonKey];
+  const acidR =ranking(svcMon?svcMon.AA:data.acidente.employees, e=>e.total);
+  const loasR =ranking(svcMon?svcMon.BPC:data.loas.employees,    e=>e.total);
+  const acidWkR=ranking(data.acidente.employees, e=>e.total);
+  const loasWkR=ranking(data.loas.employees,     e=>e.total);
+  const colsPeriod=cols=>cols.length?fmtShort(cols[0].ds)+' – '+fmtShort(cols[cols.length-1].ds):'–';
 
   // totais
   const sum=r=>r.reduce((s,x)=>s+x.score,0);
@@ -1749,7 +1766,6 @@ function updateUI(data){
   set('chip-podio', `Sem. ${weekNum(now)}  (${fmtShort(mondayStr())} – ${fmtShort(todayStr())})`);
 
   const selMon=weekMonForOff(weekOff),selSun=weekSunForOff(weekOff),selWkN=weekNumForOff(weekOff);
-  const selMonDate=monthForOff(monOff);
 
   // hoje
   renderList('list-hoje',todR);
@@ -1787,8 +1803,8 @@ function updateUI(data){
   set('st-acidente', sum(acidR)+' contratos');
   updateMetaAA(sum(acidR));
   renderTabela(data.acidente.employees,data.acidente.dateCols,'tabela-acidente-wrap',true);
-  set('sp-tabela-acidente',monPeriod);
-  set('st-tabela-acidente',sum(acidR)+' contratos');
+  set('sp-tabela-acidente',colsPeriod(data.acidente.dateCols));
+  set('st-tabela-acidente',sum(acidWkR)+' contratos');
 
   // loas
   renderList('list-loas',loasR);
@@ -1796,8 +1812,8 @@ function updateUI(data){
   set('st-loas', sum(loasR)+' contratos');
   updateMetaBPC(sum(loasR));
   renderTabela(data.loas.employees,data.loas.dateCols,'tabela-loas-wrap',true);
-  set('sp-tabela-loas',monPeriod);
-  set('st-tabela-loas',sum(loasR)+' contratos');
+  set('sp-tabela-loas',colsPeriod(data.loas.dateCols));
+  set('st-tabela-loas',sum(loasWkR)+' contratos');
 
   set('ts','🔄 '+now.toLocaleTimeString('pt-BR'));
   pendingBoosts.clear();
