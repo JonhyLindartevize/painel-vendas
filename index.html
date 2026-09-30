@@ -166,8 +166,12 @@ body::after{content:'';position:fixed;width:600px;height:600px;bottom:-120px;rig
 .rearning{min-width:82px;text-align:right;white-space:nowrap;line-height:1.3;flex-shrink:0}
 .reval{display:block;font-size:.9rem;font-weight:800;color:#0fce8a;letter-spacing:.01em}
 .rnext{display:block;font-size:.54rem;font-weight:700;color:rgba(255,255,255,.38);margin-top:1px}
+.rplus{display:block;font-size:.54rem;font-weight:700;color:#7dd3fc;margin-top:1px}
+.rplus.on{color:#f7cb35}
 .rlist.compact .reval{font-size:.76rem}
 .rlist.compact .rnext{font-size:.5rem}
+.rlist.compact .rplus{font-size:.5rem}
+.rlist.dense .rplus{font-size:.46rem}
 .rlist.dense .reval{font-size:.66rem}
 .rlist.dense .rnext{font-size:.46rem}
 .rlist.dense .rearning{min-width:60px}
@@ -1048,6 +1052,18 @@ function rav(name,sz=50){
 // METAS E PREMIAÇÃO
 // ═══════════════════════════════════
 const WEEK_BONUS=[{n:8,v:150},{n:10,v:200},{n:15,v:250}];
+const WEEK_PLUS =[{n:8,v:75}, {n:10,v:100},{n:15,v:125}];
+function calcPlusEarn(onTime){const t=[...WEEK_PLUS].reverse().find(t=>onTime>=t.n);return t?t.v:0;}
+const PLUS_URL='https://n8n.lindartevize.cloud/webhook/plus-semanal';
+let plusData=null;
+async function fetchPlus(){try{const r=await fetch(PLUS_URL,{cache:'no-store'});if(r.ok)plusData=await r.json();}catch(e){}}
+function plusFor(name){
+  const sem=plusData&&plusData.semanas&&plusData.semanas[weekMonForOff(weekOff)];
+  if(!sem)return null;
+  const k=normName(name);
+  const hit=Object.entries(sem).find(([n])=>normName(n)===k);
+  return hit?hit[1]:null;
+}
 const MON_BONUS=[{n:30,v:300},{n:35,v:400},{n:40,v:600},{n:45,v:900},{n:50,v:1200},{n:55,v:1350},{n:60,v:1500},{n:70,v:1700}];
 
 function calcWeekEarn(s){
@@ -1143,7 +1159,17 @@ function renderList(id,rank,mode){
         const ng=bonuses.find(t=>t.n>r.score);
         nextTxt=ng?`faltam ${ng.n-r.score} → R$${ng.v}`:earn>0?'🏆 máx.':'';
       }
-      earnHtml=`<div class="rearning"><span class="reval">${fmtBRL(earn)}</span><span class="rnext">${nextTxt}</span></div>`;
+      let plusHtml='';
+      if(mode==='week'){
+        const p=plusFor(r.name);
+        if(p){
+          const pe=calcPlusEarn(p.noPrazo);
+          const ng=WEEK_PLUS.find(t=>t.n>p.noPrazo);
+          const tail=pe?` · +R$${pe}`:ng?` · faltam ${ng.n-p.noPrazo} → R$${ng.v}`:'';
+          plusHtml=`<span class="rplus${pe?' on':''}">⏱ Plus ${p.noPrazo}/${p.total} no prazo${tail}</span>`;
+        }
+      }
+      earnHtml=`<div class="rearning"><span class="reval">${fmtBRL(earn)}</span><span class="rnext">${nextTxt}</span>${plusHtml}</div>`;
     }
     return `<div class="rrow ${i<3?cls[i]:''}" data-name="${r.name}">
       <div class="rbadge ${i<3?bc[i]:'n'}">${i+1}</div>
@@ -1373,7 +1399,7 @@ function kDayToMonStr(kDay){
   const m=new Date(monDay*86400000);
   return m.getUTCFullYear()+'-'+String(m.getUTCMonth()+1).padStart(2,'0')+'-'+String(m.getUTCDate()).padStart(2,'0');
 }
-async function fetchPlusData(wk){
+async function fetchWeeklyFromSheet(){
   try{
     const table=await fetchSheet('Dados gerais');
     const now=new Date();
@@ -1385,7 +1411,7 @@ async function fetchPlusData(wk){
       const row=rows[i];
       if(!row||!row.c)continue;
       const seller=(row.c[1]?.v||'').trim();
-      const kv=row.c[10]?.v;
+      const kv=row.c[9]?.v;
       if(!seller||!kv)continue;
       const kn=parseGvizDate(kv);
       if(kn===null)continue;
@@ -1758,7 +1784,7 @@ function updateUI(data){
 
 async function refresh(){
   try{
-    const[data]=await Promise.all([loadAll(),fetchPlusData(weekNum(new Date()))]);
+    const[data]=await Promise.all([loadAll(),fetchWeeklyFromSheet()]);
     // tabelasWeekly = complete history for all weeks; weeklySummary has live current-week data only
     const curKey=weekMonForOff(0);
     const freshCur=weeklySummary[curKey];
@@ -1782,7 +1808,8 @@ async function init(){
   document.addEventListener('click',()=>{ensureCtx();_loadGolBuffers();_loadOvertakeBuffer();},{once:true});
   document.addEventListener('keydown',()=>{ensureCtx();_loadGolBuffers();_loadOvertakeBuffer();},{once:true});
   try{
-    await refresh();
+    await Promise.all([refresh(),fetchPlus()]);
+    setInterval(fetchPlus,5*60000);
     document.getElementById('loading').style.display='none';
     document.getElementById('main').style.display='block';
     document.getElementById('ctrl').style.display='flex';
