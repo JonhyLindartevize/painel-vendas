@@ -166,12 +166,23 @@ body::after{content:'';position:fixed;width:600px;height:600px;bottom:-120px;rig
 .rearning{min-width:82px;text-align:right;white-space:nowrap;line-height:1.3;flex-shrink:0}
 .reval{display:block;font-size:.9rem;font-weight:800;color:#0fce8a;letter-spacing:.01em}
 .rnext{display:block;font-size:.54rem;font-weight:700;color:rgba(255,255,255,.38);margin-top:1px}
-.rplus{display:block;font-size:.54rem;font-weight:700;color:#7dd3fc;margin-top:1px}
-.rplus.on{color:#f7cb35}
+.rearning.wk{display:flex;align-items:center;gap:12px}
+.re-col{display:flex;flex-direction:column;align-items:flex-end;justify-content:center}
+.re-plus{min-width:118px;padding-left:12px;border-left:1px solid rgba(255,255,255,.08)}
+.re-tot{min-width:90px;padding-left:12px;border-left:1px solid rgba(255,255,255,.14)}
+.rplus-h{font-size:.54rem;font-weight:800;color:#7dd3fc}
+.rplus-t{font-size:.54rem;font-weight:700;color:#f7cb35}
+.rplus-n{font-size:.5rem;font-weight:700;color:rgba(255,255,255,.38)}
+.rtot-lbl{font-size:.5rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.45)}
+.rtot-val{font-size:1.05rem;font-weight:900;color:#f7cb35;letter-spacing:.01em}
 .rlist.compact .reval{font-size:.76rem}
 .rlist.compact .rnext{font-size:.5rem}
-.rlist.compact .rplus{font-size:.5rem}
-.rlist.dense .rplus{font-size:.46rem}
+.rlist.compact .rplus-h,.rlist.compact .rplus-t{font-size:.5rem}
+.rlist.compact .rplus-n,.rlist.compact .rtot-lbl{font-size:.46rem}
+.rlist.compact .rtot-val{font-size:.9rem}
+.rlist.dense .rplus-h,.rlist.dense .rplus-t{font-size:.44rem}
+.rlist.dense .rplus-n,.rlist.dense .rtot-lbl{font-size:.42rem}
+.rlist.dense .rtot-val{font-size:.76rem}
 .rlist.dense .reval{font-size:.66rem}
 .rlist.dense .rnext{font-size:.46rem}
 .rlist.dense .rearning{min-width:60px}
@@ -1053,7 +1064,6 @@ function rav(name,sz=50){
 // ═══════════════════════════════════
 const WEEK_BONUS=[{n:8,v:150},{n:10,v:200},{n:15,v:250}];
 const WEEK_PLUS =[{n:8,v:75}, {n:10,v:100},{n:15,v:125}];
-function calcPlusEarn(onTime){const t=[...WEEK_PLUS].reverse().find(t=>onTime>=t.n);return t?t.v:0;}
 const PLUS_URL='https://n8n.lindartevize.cloud/webhook/plus-semanal';
 let plusData=null;
 async function fetchPlus(){try{const r=await fetch(PLUS_URL,{cache:'no-store'});if(r.ok)plusData=await r.json();}catch(e){}}
@@ -1062,7 +1072,7 @@ function plusFor(name){
   if(!sem)return null;
   const k=normName(name);
   const hit=Object.entries(sem).find(([n])=>normName(n)===k);
-  return hit?hit[1]:null;
+  return hit?hit[1]:{total:0,noPrazo:0};
 }
 const MON_BONUS=[{n:30,v:300},{n:35,v:400},{n:40,v:600},{n:45,v:900},{n:50,v:1200},{n:55,v:1350},{n:60,v:1500},{n:70,v:1700}];
 
@@ -1159,17 +1169,24 @@ function renderList(id,rank,mode){
         const ng=bonuses.find(t=>t.n>r.score);
         nextTxt=ng?`faltam ${ng.n-r.score} → R$${ng.v}`:earn>0?'🏆 máx.':'';
       }
-      let plusHtml='';
+      const semHtml=`<span class="reval">${fmtBRL(earn)}</span><span class="rnext">${nextTxt}</span>`;
       if(mode==='week'){
         const p=plusFor(r.name);
+        let plusLines,plusSum=0;
         if(p){
-          const pe=calcPlusEarn(p.noPrazo);
+          const hits=WEEK_PLUS.filter(t=>p.noPrazo>=t.n);
+          plusSum=hits.reduce((s,t)=>s+t.v,0);
           const ng=WEEK_PLUS.find(t=>t.n>p.noPrazo);
-          const tail=pe?` · +R$${pe}`:ng?` · faltam ${ng.n-p.noPrazo} → R$${ng.v}`:'';
-          plusHtml=`<span class="rplus${pe?' on':''}">⏱ Plus ${p.noPrazo}/${p.total} no prazo${tail}</span>`;
+          plusLines=`<span class="rplus-h">⏱ Plus ${p.noPrazo}/${p.total} no prazo</span>`+
+            hits.map(t=>`<span class="rplus-t">✓ ${t.n} no prazo · +R$${t.v}</span>`).join('')+
+            (ng?`<span class="rplus-n">faltam ${ng.n-p.noPrazo} → +R$${ng.v}</span>`:'');
+        }else{
+          plusLines='<span class="rplus-h">⏱ Plus —</span>';
         }
+        earnHtml=`<div class="rearning wk"><div class="re-col">${semHtml}</div><div class="re-col re-plus">${plusLines}</div><div class="re-col re-tot"><span class="rtot-lbl">Total</span><span class="rtot-val">${fmtBRL(earn+plusSum)}</span></div></div>`;
+      }else{
+        earnHtml=`<div class="rearning">${semHtml}</div>`;
       }
-      earnHtml=`<div class="rearning"><span class="reval">${fmtBRL(earn)}</span><span class="rnext">${nextTxt}</span>${plusHtml}</div>`;
     }
     return `<div class="rrow ${i<3?cls[i]:''}" data-name="${r.name}">
       <div class="rbadge ${i<3?bc[i]:'n'}">${i+1}</div>
