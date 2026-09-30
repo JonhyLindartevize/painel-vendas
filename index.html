@@ -173,15 +173,16 @@ body::after{content:'';position:fixed;width:600px;height:600px;bottom:-120px;rig
 .rplus-h{font-size:.54rem;font-weight:800;color:#7dd3fc}
 .rplus-t{font-size:.54rem;font-weight:700;color:#f7cb35}
 .rplus-n{font-size:.5rem;font-weight:700;color:rgba(255,255,255,.38)}
+.rplus-old{font-size:.5rem;font-weight:700;color:rgba(255,255,255,.3);text-decoration:line-through;text-decoration-color:rgba(255,255,255,.45)}
 .rtot-lbl{font-size:.5rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.45)}
 .rtot-val{font-size:1.05rem;font-weight:900;color:#f7cb35;letter-spacing:.01em}
 .rlist.compact .reval{font-size:.76rem}
 .rlist.compact .rnext{font-size:.5rem}
 .rlist.compact .rplus-h,.rlist.compact .rplus-t{font-size:.5rem}
-.rlist.compact .rplus-n,.rlist.compact .rtot-lbl{font-size:.46rem}
+.rlist.compact .rplus-n,.rlist.compact .rplus-old,.rlist.compact .rtot-lbl{font-size:.46rem}
 .rlist.compact .rtot-val{font-size:.9rem}
 .rlist.dense .rplus-h,.rlist.dense .rplus-t{font-size:.44rem}
-.rlist.dense .rplus-n,.rlist.dense .rtot-lbl{font-size:.42rem}
+.rlist.dense .rplus-n,.rlist.dense .rplus-old,.rlist.dense .rtot-lbl{font-size:.42rem}
 .rlist.dense .rtot-val{font-size:.76rem}
 .rlist.dense .reval{font-size:.66rem}
 .rlist.dense .rnext{font-size:.46rem}
@@ -1172,18 +1173,21 @@ function renderList(id,rank,mode){
       const semHtml=`<span class="reval">${fmtBRL(earn)}</span><span class="rnext">${nextTxt}</span>`;
       if(mode==='week'){
         const p=plusFor(r.name);
-        let plusLines,plusSum=0;
+        let plusLines,plusVal=0;
         if(p){
           const hits=WEEK_PLUS.filter(t=>p.noPrazo>=t.n);
-          plusSum=hits.reduce((s,t)=>s+t.v,0);
+          const cur=hits[hits.length-1];
+          plusVal=cur?cur.v:0;
           const ng=WEEK_PLUS.find(t=>t.n>p.noPrazo);
           plusLines=`<span class="rplus-h">⏱ Plus ${p.noPrazo}/${p.total} no prazo</span>`+
-            hits.map(t=>`<span class="rplus-t">✓ ${t.n} no prazo · +R$${t.v}</span>`).join('')+
-            (ng?`<span class="rplus-n">faltam ${ng.n-p.noPrazo} → +R$${ng.v}</span>`:'');
+            hits.map(t=>t===cur
+              ?`<span class="rplus-t">✓ ${t.n} no prazo · R$${t.v}</span>`
+              :`<span class="rplus-old">${t.n} no prazo · R$${t.v}</span>`).join('')+
+            (ng?`<span class="rplus-n">faltam ${ng.n-p.noPrazo} p/ ${ng.n} → R$${ng.v}</span>`:'');
         }else{
           plusLines='<span class="rplus-h">⏱ Plus —</span>';
         }
-        earnHtml=`<div class="rearning wk"><div class="re-col">${semHtml}</div><div class="re-col re-plus">${plusLines}</div><div class="re-col re-tot"><span class="rtot-lbl">Total</span><span class="rtot-val">${fmtBRL(earn+plusSum)}</span></div></div>`;
+        earnHtml=`<div class="rearning wk"><div class="re-col">${semHtml}</div><div class="re-col re-plus">${plusLines}</div><div class="re-col re-tot"><span class="rtot-lbl">Total</span><span class="rtot-val">${fmtBRL(earn+plusVal)}</span></div></div>`;
       }else{
         earnHtml=`<div class="rearning">${semHtml}</div>`;
       }
